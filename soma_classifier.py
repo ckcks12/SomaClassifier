@@ -56,7 +56,7 @@
 
 # # 아래는 baseline 모델을 만드는 방법 
 
-# In[2]:
+# In[3]:
 
 import pandas as pd
 
@@ -65,7 +65,7 @@ import pandas as pd
 #  * 아래 id 에 해당되는 이미지 데이터 다운받기 https://www.dropbox.com/s/q0qmx3qlc6gfumj/soma_train.tar.gz
 #  
 
-# In[3]:
+# In[4]:
 
 train_df = pd.read_pickle("soma_goods_train.df")
 
@@ -73,17 +73,17 @@ train_df = pd.read_pickle("soma_goods_train.df")
 #  * cate1 는 대분류, cate2 는 중분류, cate3 는 소분류 
 #  * 총 10000개의 학습 데이터
 
-# In[4]:
+# In[5]:
 
 train_df.shape
 
 
-# In[5]:
+# In[6]:
 
 train_df
 
 
-# In[6]:
+# In[7]:
 
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -94,7 +94,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 #  * 예를 들어서 '베네통키즈 키즈 러블리 키즈' 라는 상품명이 있고, 각 단어의 id 가 , 베네통키즈 - 1, 키즈 - 2, 러블리 -3 이라고 한다면 이 상품명은 (1,1), (2,2), (3,1) 형태로 변환을 해준다. (첫번째 단어 id, 두번째 빈도수)
 #  
 
-# In[7]:
+# In[8]:
 
 vectorizer = CountVectorizer()
 
@@ -107,14 +107,65 @@ vectorizer = CountVectorizer()
 #  * 대분류, 중분류, 소분류 카테고리 명을 합쳐서 카테고리명을 만든다.  우리는 이 카테고리명을 예측하는 분류기를 만들게 된다.
 #  * d_list 에는 학습하는 데이터(상품명) 을 넣고, cate_list 에는 분류를 넣는다.
 
-# In[57]:
+# In[92]:
 
 from konlpy.tag import Twitter
-twitter = Twitter()  
 import re
+twitter = Twitter()
+def clean(str):
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", str)
+    stack = []
+    str2 = u""
+    for s in str.split():
+        s2 = twitter.pos(s)
+        for ss in s2:
+            #if ss[1] == u"Noun": # if noun then just put it.
+            if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
+                str2 += u" " + u" ".join(stack)
+                str2 += u" " + ss[0]
+                stack = []
+            else:
+                if ss[1] != u"Number":
+                    stack.append(ss[0])
+    if stack:
+        str2 += u" " + u"".join(stack)
+        
+    return str2
 
 
-# In[148]:
+# In[108]:
+
+from konlpy.tag import Twitter
+import re
+twitter = Twitter()
+def clean(str):
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    #str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", str)
+    str = str.replace("(", " ").replace(")", " ")
+    str = str.replace("[", " ").replace("]", " ")
+    str = str.replace("/", " ").replace(",", " ")
+    str = str.replace("{", " ").replace("}", " ")
+    stack = []
+    str2 = u""
+    for s in str.split():
+        s2 = twitter.pos(s)
+        for ss in s2:
+            #if ss[1] == u"Noun": # if noun then just put it.
+            if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
+                str2 += u" " + u" ".join(stack)
+                str2 += u" " + ss[0]
+                stack = []
+            else:
+                if ss[1] != u"Number":
+                    stack.append(ss[0])
+    if stack:
+        str2 += u" " + u"".join(stack)
+        
+    return str2
+
+
+# In[109]:
 
 d_list = []
 cate_list = []
@@ -122,11 +173,7 @@ y_list = []
 for each in train_df.iterrows():
     cate = ";".join([each[1]['cate1'],each[1]['cate2'],each[1]['cate3']])
     name = each[1]["name"]
-    print name
     name = clean(name)
-    print name
-    print cate
-    print ""
     #name = re.sub(r"([\[\(\{].*?[\]\)\}])", "", name)
     #name_list = twitter.nouns(name)
     #name_list = name.split()
@@ -137,18 +184,22 @@ for each in train_df.iterrows():
     cate_list.append(cate)
 
 
-# In[149]:
+# In[110]:
 
 print len(set(cate_list))
 
 
-# In[150]:
+# In[95]:
 
 from konlpy.tag import Twitter
 import re
 twitter = Twitter()
 def clean(str):
-    str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    str = str.replace("(", " ").replace(")", " ")
+    str = str.replace("[", " ").replace("]", " ")
+    str = str.replace("/", " ").replace(",", " ")
+    str = str.replace("{", " ").replace("}", " ")
     stack = []
     str2 = u""
     for s in str.split():
@@ -170,12 +221,12 @@ def clean(str):
 #  * 각 카테고리명에 대해서 serial 한 숫자 id 를 부여한다.
 #  * cate_dict[카테고리명] = serial_id 형태이다. 
 
-# In[151]:
+# In[111]:
 
 cate_dict = dict(zip(list(set(cate_list)),range(len(set(cate_list)))))
 
 
-# In[152]:
+# In[112]:
 
 print cate_dict[u'디지털/가전;네트워크장비;KVM스위치']
 print cate_dict[u'패션의류;남성의류;정장']
@@ -183,7 +234,7 @@ print cate_dict[u'패션의류;남성의류;정장']
 
 #  * y_list 에는 단어 형태의 카테고리명에 대응되는 serial_id 값들을 넣어준다.
 
-# In[153]:
+# In[113]:
 
 y_list = []
 #for each in train_df.iterrows():
@@ -197,34 +248,34 @@ for cate in cate_list:
 #  * fit_transform 을 하게 되면, d_list 에 들어 있는 모든 단어들에 대해서, 단어-id 사전을 만드는 일을 먼저하고 (fit)
 #  * 실제로 d_list 에 들어 있는 각 데이터들에 대해서 (단어id,빈도수) 형태의 데이터로 변환을 해준다. (transform)
 
-# In[154]:
+# In[114]:
 
 x_list = vectorizer.fit_transform(d_list)
 
 
-# In[155]:
+# In[115]:
 
 print len(y_list) 
 
 
 #  * 여기서는 분류에서 가장 많이 사용하는 SVM(Support Vector Machine) 을 사용한 분류 학습을 한다. 
 
-# In[156]:
+# In[116]:
 
 from sklearn.svm import LinearSVC
 
 
-# In[157]:
+# In[117]:
 
 from sklearn.grid_search import GridSearchCV
 
 
-# In[158]:
+# In[118]:
 
 import numpy as np
 
 
-# In[159]:
+# In[119]:
 
 svc_param = {'C':np.logspace(-2,0,20)}
 
@@ -232,12 +283,12 @@ svc_param = {'C':np.logspace(-2,0,20)}
 #  * grid search 를 통해서 최적의 c 파라미터를 찾는다.
 #  * 5 cross validation 을 한다.
 
-# In[160]:
+# In[120]:
 
 gs_svc = GridSearchCV(LinearSVC(loss='l2'),svc_param,cv=5,n_jobs=4)
 
 
-# In[161]:
+# In[121]:
 
 gs_svc.fit(x_list, y_list)
 
@@ -245,22 +296,22 @@ gs_svc.fit(x_list, y_list)
 #  * 현재 기본 baseline 성능은 64% 정도로 나온다. 이 성능을 높이는 것이 본 과제의 목표이다. 
 #  * 위 grid search 로는 c 값을 찾고, 이렇게 찾은 c 값으로 다시 train 을 해서 최종 모델을 만든다.
 
-# In[162]:
+# In[122]:
 
 print gs_svc.best_params_, gs_svc.best_score_
 
 
-# In[163]:
+# In[123]:
 
 clf = LinearSVC(C=gs_svc.best_params_['C'])
 
 
-# In[164]:
+# In[124]:
 
 clf.fit(x_list,y_list)
 
 
-# In[165]:
+# In[125]:
 
 from sklearn.externals import joblib
 
@@ -269,7 +320,7 @@ from sklearn.externals import joblib
 #  * 아래 형태로 저장하면, 추후에 손쉽게 load 할 수 있다.
 #  * 이때 SVM 모델,  cate_name - cate_id 사전, 단어 - 단어_id,빈도수 변ㅎ
 
-# In[166]:
+# In[126]:
 
 joblib.dump(clf,'classify.model',compress=3)
 joblib.dump(cate_dict,'cate_dict.dat',compress=3)
@@ -279,18 +330,18 @@ joblib.dump(vectorizer,'vectorizer.dat',compress=3)
 #  * 여기까지 모델을 만든다음에 classify_server 노트북을 열고, 쭉 실행을 시키면 서버가 뜬다.
 #  * 서버가 뜨면 아래처럼 실행을 시킬 수 가 있다.
 
-# In[167]:
+# In[127]:
 
 import requests
 
 
-# In[168]:
+# In[128]:
 
 name='[신한카드5%할인][예화-좋은아이들] 아동한복 여아 1076 빛이나노랑'
 img=''
 
 
-# In[169]:
+# In[33]:
 
 u='http://localhost:8887/classify?name=%s&img=%s'
 

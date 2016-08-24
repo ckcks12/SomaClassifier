@@ -3,12 +3,12 @@
 
 # 
 
-# In[117]:
+# In[39]:
 
 from sklearn.externals import joblib
 
 
-# In[118]:
+# In[40]:
 
 
 clf = joblib.load('classify.model')
@@ -16,23 +16,23 @@ cate_dict = joblib.load('cate_dict.dat')
 vectorizer = joblib.load('vectorizer.dat')
 
 
-# In[119]:
+# In[41]:
 
 joblib.dump(clf,'n_classify.model')
 
 
-# In[120]:
+# In[42]:
 
 joblib.dump(cate_dict,'n_cate_dict.dat')
 joblib.dump(vectorizer,'n_vectorizer.dat')
 
 
-# In[121]:
+# In[43]:
 
 cate_id_name_dict = dict(map(lambda (k,v):(v,k),cate_dict.items()))
 
 
-# In[122]:
+# In[44]:
 
 pred = clf.predict(vectorizer.transform(['[신한카드5%할인][서우한복] 아동한복 여자아동 금나래 (분홍)']))[0]
 print cate_id_name_dict[pred]
@@ -64,7 +64,7 @@ def classify():
     return {"cate": cate}
 
 
-run(host='0.0.0.0', port=8887)
+run(host='0.0.0.0', port=8887, quiet=True)
 
 
 #  * 추후 여기 docker 에서 뭔가 python package 설치할게 있으면 
@@ -85,7 +85,7 @@ twitter = Twitter()
 print(twitter.nouns(u'단독입찰보다 복수입찰의 경우'))
 
 
-# In[116]:
+# In[1]:
 
 from konlpy.tag import Twitter
 twitter = Twitter()
@@ -113,56 +113,89 @@ def t(name):
     return cate_id_name_dict[p_max]
 
 
-# In[59]:
+# In[2]:
 
 str = "[신한카드5%할인][서우한복] 아동한복 여자아동 금나래 (분홍)"
 
 
-# In[60]:
+# In[3]:
 
 t("[신한카드5%할인][늘사랑] 금박 꽃수 당의(1380-07 아동여)")
 
 
-# In[1]:
+# In[4]:
 
 print "A"
 
 
-# In[35]:
+# In[5]:
 
 name = re.sub(r"([\[\(\{].*?[\]\)\}])", "", name)
 print name
 
 
-# In[72]:
+# In[6]:
 
 from datetime import timedelta
 print (datetime.datetime.now() + datetime.timedelta(hours=9)).time()
 
 
-# In[73]:
+# In[7]:
 
-from datetime import timedelta
+from datetime import timedelta, datetime
+import datetime
 def now():
     print (datetime.datetime.now() + datetime.timedelta(hours=9)).time()
 
 
-# In[74]:
+# In[8]:
 
 now()
 
 
-# In[101]:
+# In[18]:
 
 from konlpy.tag import Twitter
 import re
 twitter = Twitter()
 def clean(str):
-    str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", unicode(str, "utf-8"))
     stack = []
     str2 = u""
     for s in str.split():
-        s2 = twitter.pos(unicode(s, "utf-8"))
+        s2 = twitter.pos(s)
+        for ss in s2:
+            #if ss[1] == u"Noun": # if noun then just put it.
+            if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
+                str2 += u" " + u" ".join(stack)
+                str2 += u" " + ss[0]
+                stack = []
+            else:
+                if ss[1] != u"Number":
+                    stack.append(ss[0])
+    if stack:
+        str2 += u" " + u"".join(stack)
+        
+    return str2
+
+
+# In[28]:
+
+from konlpy.tag import Twitter
+import re
+twitter = Twitter()
+def clean(str):
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    str = unicode(str, "utf-8")
+    str = str.replace("(", " ").replace(")", " ")
+    str = str.replace("[", " ").replace("]", " ")
+    str = str.replace("/", " ").replace(",", " ")
+    str = str.replace("{", " ").replace("}", " ")
+    stack = []
+    str2 = u""
+    for s in str.split():
+        s2 = twitter.pos(s)
         for ss in s2:
             #if ss[1] == u"Noun": # if noun then just put it.
             if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
@@ -171,6 +204,38 @@ def clean(str):
                 stack = []
             else:
                 stack.append(ss[0])
+    if stack:
+        str2 += u" " + u"".join(stack)
+        
+    return str2
+
+
+# In[38]:
+
+from konlpy.tag import Twitter
+import re
+twitter = Twitter()
+def clean(str):
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    #str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", str)
+    str = str.replace("(", " ").replace(")", " ")
+    str = str.replace("[", " ").replace("]", " ")
+    str = str.replace("/", " ").replace(",", " ")
+    str = str.replace("{", " ").replace("}", " ")
+    stack = []
+    str2 = u""
+    str = unicode(str, "utf-8")
+    for s in str.split():
+        s2 = twitter.pos(s)
+        for ss in s2:
+            #if ss[1] == u"Noun": # if noun then just put it.
+            if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
+                str2 += u" " + u" ".join(stack)
+                str2 += u" " + ss[0]
+                stack = []
+            else:
+                if ss[1] != u"Number":
+                    stack.append(ss[0])
     if stack:
         str2 += u" " + u"".join(stack)
         
