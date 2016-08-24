@@ -46,3 +46,5 @@ def clean(str):
         
     return str + u" " + str2 + u" " + u" ".join(twitter.nouns(str))
 ```
+
+*2016-08-25  0:09 : jupyter에서 자유롭게 interpreting 하다보니 순서가 얽힐거같아 순서를 맞추고 다시 올렸습니다.
