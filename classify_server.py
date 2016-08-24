@@ -3,12 +3,12 @@
 
 # 
 
-# In[39]:
+# In[103]:
 
 from sklearn.externals import joblib
 
 
-# In[40]:
+# In[104]:
 
 
 clf = joblib.load('classify.model')
@@ -16,23 +16,23 @@ cate_dict = joblib.load('cate_dict.dat')
 vectorizer = joblib.load('vectorizer.dat')
 
 
-# In[41]:
+# In[105]:
 
 joblib.dump(clf,'n_classify.model')
 
 
-# In[42]:
+# In[106]:
 
 joblib.dump(cate_dict,'n_cate_dict.dat')
 joblib.dump(vectorizer,'n_vectorizer.dat')
 
 
-# In[43]:
+# In[107]:
 
 cate_id_name_dict = dict(map(lambda (k,v):(v,k),cate_dict.items()))
 
 
-# In[44]:
+# In[108]:
 
 pred = clf.predict(vectorizer.transform(['[신한카드5%할인][서우한복] 아동한복 여자아동 금나래 (분홍)']))[0]
 print cate_id_name_dict[pred]
@@ -48,19 +48,15 @@ from threading import  Condition
 _CONDITION = Condition()
 @route('/classify')
 def classify():
-    now() # print the time.
+    #now() # print the time.
     #img = request.GET.get('img','')
-    name = request.GET.get('name', '')
-    
+    name = request.GET.get('name', '') 
     #pred = clf.predict(vectorizer.transform([name]))[0]
     #return {'cate':cate_id_name_dict[pred]}
     
     cate = t(name)
     
     # debug
-    print name
-    print cate
-    print ""
     return {"cate": cate}
 
 
@@ -118,9 +114,9 @@ def t(name):
 str = "[신한카드5%할인][서우한복] 아동한복 여자아동 금나래 (분홍)"
 
 
-# In[3]:
+# In[49]:
 
-t("[신한카드5%할인][늘사랑] 금박 꽃수 당의(1380-07 아동여)")
+print clean("[신한카드5%할인][늘사랑] 금박 꽃수 당의(1380-07 아동여)")
 
 
 # In[4]:
@@ -153,7 +149,7 @@ def now():
 now()
 
 
-# In[18]:
+# In[100]:
 
 from konlpy.tag import Twitter
 import re
@@ -161,6 +157,7 @@ twitter = Twitter()
 def clean(str):
     #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
     str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", unicode(str, "utf-8"))
+    return str
     stack = []
     str2 = u""
     for s in str.split():
@@ -172,8 +169,7 @@ def clean(str):
                 str2 += u" " + ss[0]
                 stack = []
             else:
-                if ss[1] != u"Number":
-                    stack.append(ss[0])
+                stack.append(ss[0])
     if stack:
         str2 += u" " + u"".join(stack)
         
@@ -240,6 +236,60 @@ def clean(str):
         str2 += u" " + u"".join(stack)
         
     return str2
+
+
+# In[88]:
+
+from konlpy.tag import Twitter
+import re
+twitter = Twitter()
+def clean(str):
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    str = unicode(str, "utf-8")
+    str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", str)
+    stack = []
+    str2 = u""
+    for s in str.split():
+        s2 = twitter.pos(s)
+        for ss in s2:
+            #if ss[1] == u"Noun": # if noun then just put it.
+            if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
+                str2 += u" " + u" ".join(stack)
+                str2 += u" " + ss[0]
+                stack = []
+            else:
+                stack.append(ss[0])
+    if stack:
+        str2 += u" " + u" ".join(stack)
+        
+    return str + u" " + str2
+
+
+# In[102]:
+
+from konlpy.tag import Twitter
+import re
+twitter = Twitter()
+def clean(str):
+    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
+    str = unicode(str, "utf-8")
+    str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", str)
+    stack = []
+    str2 = u""
+    for s in str.split():
+        s2 = twitter.pos(s)
+        for ss in s2:
+            #if ss[1] == u"Noun": # if noun then just put it.
+            if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
+                str2 += u" " + u" ".join(stack)
+                str2 += u" " + ss[0]
+                stack = []
+            else:
+                stack.append(ss[0])
+    if stack:
+        str2 += u" " + u" ".join(stack)
+        
+    return str + u" " + str2 + u" " + u" ".join(twitter.nouns(str))
 
 
 # In[ ]:
