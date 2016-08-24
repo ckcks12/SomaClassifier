@@ -99,15 +99,10 @@ from sklearn.feature_extraction.text import CountVectorizer
 vectorizer = CountVectorizer()
 
 
-# In[ ]:
-
-
-
-
 #  * 대분류, 중분류, 소분류 카테고리 명을 합쳐서 카테고리명을 만든다.  우리는 이 카테고리명을 예측하는 분류기를 만들게 된다.
 #  * d_list 에는 학습하는 데이터(상품명) 을 넣고, cate_list 에는 분류를 넣는다.
 
-# In[211]:
+# In[232]:
 
 from konlpy.tag import Twitter
 import re
@@ -130,41 +125,10 @@ def clean(str):
     if stack:
         str2 += u" " + u" ".join(stack)
         
-    return str + u" " + str2 + u" " + u" ".join(twitter.nouns(str))
+    return str + u" " + u" ".join(twitter.nouns(str))
 
 
-# In[108]:
-
-from konlpy.tag import Twitter
-import re
-twitter = Twitter()
-def clean(str):
-    #str = re.sub(r"([\[\(\{].*?[\]\)\}])", "", str)
-    #str = re.sub(r"[`~!@#$%^&*()\-_=+\\|;:\[\]{'\"},<.>\/?]", " ", str)
-    str = str.replace("(", " ").replace(")", " ")
-    str = str.replace("[", " ").replace("]", " ")
-    str = str.replace("/", " ").replace(",", " ")
-    str = str.replace("{", " ").replace("}", " ")
-    stack = []
-    str2 = u""
-    for s in str.split():
-        s2 = twitter.pos(s)
-        for ss in s2:
-            #if ss[1] == u"Noun": # if noun then just put it.
-            if ss[1] != u"Alpha" and ss[1] != u"Number" and ss[1] != u"Punctuation":
-                str2 += u" " + u" ".join(stack)
-                str2 += u" " + ss[0]
-                stack = []
-            else:
-                if ss[1] != u"Number":
-                    stack.append(ss[0])
-    if stack:
-        str2 += u" " + u"".join(stack)
-        
-    return str2
-
-
-# In[212]:
+# In[233]:
 
 d_list = []
 cate_list = []
@@ -183,7 +147,7 @@ for each in train_df.iterrows():
     cate_list.append(cate)
 
 
-# In[213]:
+# In[234]:
 
 print len(set(cate_list))
 
@@ -196,12 +160,12 @@ print len(set(cate_list))
 #  * 각 카테고리명에 대해서 serial 한 숫자 id 를 부여한다.
 #  * cate_dict[카테고리명] = serial_id 형태이다. 
 
-# In[214]:
+# In[235]:
 
 cate_dict = dict(zip(list(set(cate_list)),range(len(set(cate_list)))))
 
 
-# In[215]:
+# In[236]:
 
 print cate_dict[u'디지털/가전;네트워크장비;KVM스위치']
 print cate_dict[u'패션의류;남성의류;정장']
@@ -209,7 +173,7 @@ print cate_dict[u'패션의류;남성의류;정장']
 
 #  * y_list 에는 단어 형태의 카테고리명에 대응되는 serial_id 값들을 넣어준다.
 
-# In[216]:
+# In[237]:
 
 y_list = []
 #for each in train_df.iterrows():
@@ -223,34 +187,34 @@ for cate in cate_list:
 #  * fit_transform 을 하게 되면, d_list 에 들어 있는 모든 단어들에 대해서, 단어-id 사전을 만드는 일을 먼저하고 (fit)
 #  * 실제로 d_list 에 들어 있는 각 데이터들에 대해서 (단어id,빈도수) 형태의 데이터로 변환을 해준다. (transform)
 
-# In[217]:
+# In[238]:
 
 x_list = vectorizer.fit_transform(d_list)
 
 
-# In[218]:
+# In[239]:
 
 print len(y_list) 
 
 
 #  * 여기서는 분류에서 가장 많이 사용하는 SVM(Support Vector Machine) 을 사용한 분류 학습을 한다. 
 
-# In[219]:
+# In[240]:
 
 from sklearn.svm import LinearSVC
 
 
-# In[220]:
+# In[241]:
 
 from sklearn.grid_search import GridSearchCV
 
 
-# In[221]:
+# In[242]:
 
 import numpy as np
 
 
-# In[222]:
+# In[243]:
 
 svc_param = {'C':np.logspace(-2,0,20)}
 
@@ -258,12 +222,12 @@ svc_param = {'C':np.logspace(-2,0,20)}
 #  * grid search 를 통해서 최적의 c 파라미터를 찾는다.
 #  * 5 cross validation 을 한다.
 
-# In[223]:
+# In[251]:
 
 gs_svc = GridSearchCV(LinearSVC(loss='l2'),svc_param,cv=5,n_jobs=8)
 
 
-# In[224]:
+# In[ ]:
 
 gs_svc.fit(x_list, y_list)
 
@@ -271,22 +235,22 @@ gs_svc.fit(x_list, y_list)
 #  * 현재 기본 baseline 성능은 64% 정도로 나온다. 이 성능을 높이는 것이 본 과제의 목표이다. 
 #  * 위 grid search 로는 c 값을 찾고, 이렇게 찾은 c 값으로 다시 train 을 해서 최종 모델을 만든다.
 
-# In[225]:
+# In[246]:
 
 print gs_svc.best_params_, gs_svc.best_score_
 
 
-# In[226]:
+# In[247]:
 
 clf = LinearSVC(C=gs_svc.best_params_['C'])
 
 
-# In[227]:
+# In[248]:
 
 clf.fit(x_list,y_list)
 
 
-# In[228]:
+# In[249]:
 
 from sklearn.externals import joblib
 
@@ -295,7 +259,7 @@ from sklearn.externals import joblib
 #  * 아래 형태로 저장하면, 추후에 손쉽게 load 할 수 있다.
 #  * 이때 SVM 모델,  cate_name - cate_id 사전, 단어 - 단어_id,빈도수 변ㅎ
 
-# In[229]:
+# In[250]:
 
 joblib.dump(clf,'classify.model',compress=3)
 joblib.dump(cate_dict,'cate_dict.dat',compress=3)
